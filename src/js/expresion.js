@@ -19,4 +19,5 @@ window.addEventListener('DOMContentLoaded',function(){
 
 	g.context.addColorStop(0.5,'#b5ff10');
 	g.context.addColorStop(1,'yellow');
+
 });
