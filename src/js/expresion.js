@@ -1,6 +1,7 @@
 import { Doodle } from './doodle.js';
+import $ from 'jquery';
 
-window.addEventListener('DOMContentLoaded',function(){
+$(document).ready(function(){
 	let container = document.createElement('div');
 	container.style.height = window.innerHeight+'px';
 	container.style.width = window.innerWidth+'px';
@@ -32,15 +33,21 @@ window.addEventListener('DOMContentLoaded',function(){
 					}
 			})()
 		],
-
 	].forEach((args)=>{
 		let g = doodle.graphics.create.rectangle.call(null,args[0]);
 		g.context.createRadialGradient.apply(null,args[1].createRadialGradient);
 		args[1].addColorStop.forEach((color)=>{ g.context.addColorStop.apply(null,color); })
 	});
 
-
-
-
+	$('a').on('mouseenter',function(){
+		let line = undefined,a = $(this);
+		line = a.on('click',function(){
+			a.off('mouseleave');
+		}).on('mouseleave',function(){
+			line.removeClass('active')
+			a.off('mouseleave click');
+		}).find('.line');
+		line.addClass('active');
+	});
 
 });

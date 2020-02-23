@@ -8303,6 +8303,13 @@ video {
   transform: rotate(90deg) translate(-43px, -43px);
   transform-origin: left; }
 
+a .line {
+  left: -100%;
+  transition: left .5s; }
+
+a .line.active {
+  left: 0px; }
+
 @media (min-width: 640px) {
   .sm\:sr-only {
     position: absolute;

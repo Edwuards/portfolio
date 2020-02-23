@@ -4,20 +4,32 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width:device-width, initial-scale=1.0" >
     <title>Edwuards</title>
-    <script type="text/javascript" src="js/index.js">
-    </script>
+    <script type="text/javascript" src="js/jquery.js"></script>
+    <script type="text/javascript" src="js/index.js"></script>
     <link rel="stylesheet" href="/css/index.css">
     <!-- <link href="https://fonts.googleapis.com/css?family=Astloch&display=swap" rel="stylesheet"> -->
   </head>
   <body class="w-screen h-screen overflow-hidden relative">
     <main class="w-full h-full absolute">
-      <h1 id="nombre" class="font-astloch text-4xl p-4">
-        César Edwuards
-      </h1>
-      <nav class="absolute bottom-0 ml-4 px-2 py-4">
-        <a href="about" class="font-astloch text-2xl mx-2" >about</a>
-        <a href="about" class="font-astloch text-2xl mx-2" >projects</a>
-        <a href="about" class="font-astloch text-2xl mx-2" >contact</a>
+      <div id="nombre" class="p-4 overflow-hidden relative flex">
+        <a href="home" class="mx-1 px-1 overflow-hidden relative flex items-center">
+          <h1 class="text-4xl font-astloch">César Edwuards</h1>
+          <div class="line absolute w-full h-px bg-red-800"></div>
+        </a>
+      </div>
+      <nav class="flex absolute bottom-0 ml-4 px-2 py-4">
+        <a href="about" class="mx-1 px-1 overflow-hidden relative flex items-center justify-center" >
+          <div class="line absolute w-full h-px bg-red-800"></div>
+          <p class="font-astloch text-2xl" >about</p>
+        </a>
+        <a href="projects" class="mx-1 px-1 overflow-hidden relative flex items-center justify-center" >
+          <div class="line absolute w-full h-px bg-red-800"></div>
+          <p class="font-astloch text-2xl" >projects</p>
+        </a>
+        <a href="contacts" class="mx-1 px-1 overflow-hidden relative flex items-center justify-center" >
+          <div class="line absolute w-full h-px bg-red-800"></div>
+          <p class="font-astloch text-2xl" >contact</p>
+        </a>
       </nav>
     </main>
   </body>
