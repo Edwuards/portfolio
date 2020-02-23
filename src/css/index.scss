@@ -1,3 +1,12 @@
 @import "tailwindcss/base";
 
 @import "tailwindcss/utilities";
+
+#nombre {
+    /*
+      This can be applied through javascript .
+      It can be calculated using the height of the container
+    */
+    transform: rotate(90deg) translate(-43px,-43px);
+    transform-origin: left;
+}

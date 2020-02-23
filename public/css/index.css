@@ -8295,6 +8295,14 @@ video {
 .duration-1000 {
   transition-duration: 1000ms; }
 
+#nombre {
+  /*
+      This can be applied through javascript .
+      It can be calculated using the height of the container
+    */
+  transform: rotate(90deg) translate(-43px, -43px);
+  transform-origin: left; }
+
 @media (min-width: 640px) {
   .sm\:sr-only {
     position: absolute;
