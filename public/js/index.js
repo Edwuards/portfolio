@@ -1,4 +1,4 @@
-(function ($) {
+var index = (function (exports, $) {
   'use strict';
 
   $ = $ && $.hasOwnProperty('default') ? $['default'] : $;
@@ -753,16 +753,7 @@
     const CONTEXT = { properties: {}, functions: {} };
     const CALL = ()=>{
       for (let key in CONTEXT.functions) {
-        if(CONTEXT.functions[key].state){
-          if(key == 'createRadialGradient'){
-            let ctx = CANVAS[key].apply(CANVAS,CONTEXT.functions[key].args);
-            CONTEXT.functions.addColorStop.args.forEach((args)=>{ ctx.addColorStop.apply(ctx,args); });
-            CONTEXT.properties.fillStyle = ctx;
-          }
-          else{
-            CANVAS[key].apply(CANVAS,CONTEXT.functions[key].args);
-          }
-        }
+        if(CONTEXT.functions[key].state){ CANVAS[key].apply(CANVAS,CONTEXT.functions[key].args); }
       }
     };
     const SETUP = ()=>{
@@ -772,10 +763,7 @@
       if(typeof CANVAS[key] !== 'function' && key !== 'canvas'){ CONTEXT.properties[key] = CANVAS[key]; }
       else{ CONTEXT.functions[key] = {state: false, args: [] }; }
     }
-    Object.defineProperty(CONTEXT.functions,'addColorStop',{
-      enumerable: false,
-      value: {state: false, args: [] }
-    });
+
     CONTEXT.functions.fill.state = true;
     const METHODS = {
       'render': {
@@ -827,21 +815,6 @@
               });
             }
           }
-
-          Object.defineProperty(obj,'addColorStop',{
-            enumerable: true,
-            writable: false,
-            value: function(){
-              if(arguments.length === 1 && typeof arguments[0] === 'boolean'){
-                CONTEXT.functions.addColorStop.state = arguments[0];
-                CONTEXT.functions.addColorStop.args = [];
-              }
-              if(arguments.length >= 1 && typeof arguments[0] != 'boolean'){
-                CONTEXT.functions.addColorStop.state = true;
-                CONTEXT.functions.addColorStop.args.push(arguments);
-              }
-            }
-          });
 
           return obj;
         })()
@@ -1056,12 +1029,116 @@
 
   }
 
+  function RadialGradient(data){
+    // let test = Test([
+    //   [Rules.is.object,[data]],
+    //   [Rules.has.properties,[['x','y','w','h','radials','canvas'],data]],
+    //   [Rules.is.array,[data.radials]],
+    //   [Rules.has.arrayLength,[data.radials,2]]
+    //   [Rules.is.number,[data.w]],
+    //   [Rules.is.number,[data.h]]
+    // ]);
+    //
+    // if(!test.passed){ throw test.error; }
+    let test = undefined;
+    if(data.radials.some((data)=>{
+      test = Test([
+        [Rules.is.object,[data]],
+        [Rules.has.properties,[['x','y','r'],data]],
+        [Rules.is.number,[data.x]],
+        [Rules.is.number,[data.y]],
+        [Rules.is.number,[data.r]]
+      ]);
+      return !test.passed
+    })){ throw test.error; }
+
+    function Radial(x,y,r){
+
+      const METHODS = {
+        'x':{
+          enumerable: true,
+          get:()=>{ return x; },
+          set:(value)=>{ x = value; }
+        },
+        'y':{
+          enumerable: true,
+          get:()=>{ return y; },
+          set:(value)=>{ y = value; }
+        },
+        'r':{
+          enumerable: true,
+          get:()=>{ return r; },
+          set:(value)=>{ r = value; }
+        },
+      };
+
+      Object.defineProperties(this,METHODS);
+    }
+
+    const METHODS = {
+      'radials':{
+        enumerable: true,
+        get: ()=>{ return PROPS.radials.map((r)=>{ return r }); },
+      },
+      'colorStops':{
+        enumerable: true,
+        writable: false,
+        value: (()=>{
+          const OBJ = {};
+          const METHODS = {
+            'add': {
+              enumerable: true,
+              writable: false,
+              value: (stop,color)=>{
+                stop = `#${stop}`;
+                if(PROPS.colorStops[stop] == undefined){ PROPS.colorStops[stop] = color; }
+              },
+            },
+            'get': {
+              enumerable: true,
+              get:()=>{
+                 return Object.keys(PROPS.colorStops).sort((a,b)=>{ return Number(a.split('#')[1]) - Number(b.split('#')[1]) })
+                 .map((stop,i)=>{ return { stop: Number(stop.split('#')[1]), color: PROPS.colorStops[stop] }; });
+              }
+            }
+          };
+          Object.defineProperties(OBJ,METHODS);
+          return OBJ;
+        })()
+      }
+    };
+
+    const PROPS = {
+      radials: [],
+      colorStops: {}
+    };
+
+    let x = data.x, w = x+data.w;
+    let y = data.y, h = y+data.h;
+    let points = [[x,y],[w,y],[w,h],[x,h]];
+    data.radials.forEach((radial,i)=>{ PROPS.radials.push(new Radial(radial.x,radial.y,radial.r)); });
+
+    Graphic.call(this,{points,canvas:data.canvas});
+    Object.defineProperties(this,METHODS);
+    this.render = function () {
+      let pts = this.graphic.points.get;
+      this.canvas.moveTo(pts[0].x, pts[0].y);
+      pts.forEach((pt) => { this.canvas.lineTo(pt.x, pt.y); });
+
+      let radials = this.graphic.radials;
+      let gradient = this.canvas.createRadialGradient(radials[0].x,radials[0].y,radials[0].r,radials[1].x,radials[1].y,radials[1].r);
+      this.graphic.colorStops.get.forEach((data)=>{ gradient.addColorStop(data.stop,data.color); });
+      this.canvas.fillStyle = gradient;
+    };
+  }
+
   var Graphics = /*#__PURE__*/Object.freeze({
     Polygon: Polygon,
     Rectangle: Rectangle,
     Square: Square,
     Circle: Circle,
-    Arc: Arc
+    Arc: Arc,
+    RadialGradient: RadialGradient
   });
 
   const ID$1 = Helpers.counter();
@@ -1332,6 +1409,8 @@
     Object.defineProperties(this,METHODS);
   }
 
+  const Gradients = [];
+
   $(document).ready(function(){
   	let container = document.createElement('div');
   	container.style.height = window.innerHeight+'px';
@@ -1347,40 +1426,56 @@
 
   	[
   		[
-  			{ w: window.innerWidth, h: window.innerHeight, x: 0, y:0 },
-  			(()=>{
-  				let x = window.innerWidth, y = window.innerHeight;
-  					return { createRadialGradient: [x+200,y+200,1000,x,y,100],
-  						addColorStop: [[0,'#f6e8fd'],[0.9,'#c29ad6'],[1,'#d02a86']]
-  					}
-  			})()
+  			{
+  				x: 0, y:0,
+  				w: window.innerWidth,
+  				h: window.innerHeight,
+  				radials: (()=>{
+  					let x = window.innerWidth, y = window.innerHeight;
+  					return [{x:x+200,y:y+200,r:1000},{x,y,r:100}]
+  				})()
+  			},
+  			[[0,'#f6e8fd'],[0.9,'#c29ad6'],[1,'#d02a86']]
   		],
   		[
-  			{ w: window.innerWidth, h: window.innerHeight, x: 0, y:0 },
-  			(()=>{
-  				let x = 0, y = 100;
-  					return { createRadialGradient: [x,y,400,x,y,20],
-  						addColorStop: [[0,'#f5deb3b3'],[1,'#ffdc5f94']]
-  					}
-  			})()
+  			{
+  				x: 0, y:0,
+  				w: window.innerWidth,
+  				h: window.innerHeight,
+  				radials: (()=>{
+  					let x = 0, y = 100;
+  					return [{x,y,r:400},{x,y,r:20}];
+  				})()
+  			},
+  			[[0,'#f5deb3b3'],[1,'#ffdc5f94']]
   		],
   	].forEach((args)=>{
-  		let g = doodle.graphics.create.rectangle.call(null,args[0]);
-  		g.context.createRadialGradient.apply(null,args[1].createRadialGradient);
-  		args[1].addColorStop.forEach((color)=>{ g.context.addColorStop.apply(null,color); });
+  		let g = doodle.graphics.create.radialgradient.call(null,args[0]);
+  		args[1].forEach((data)=>{ g.colorStops.add.apply(null,data);} );
+  		Gradients.push(g);
   	});
 
   	$('a').on('mouseenter',function(){
-  		let line = undefined,a = $(this);
-  		line = a.on('click',function(){
+  		let a = $(this), line = a.find('.line');
+  		line.addClass('active');
+  		a.on('click',function(e){
+  			e.preventDefault();
+  			$('.line').removeClass('active');
+  			line.addClass('active');
   			a.off('mouseleave');
-  		}).on('mouseleave',function(){
+  		});
+  		a.on('mouseleave',function(){
   			line.removeClass('active');
   			a.off('mouseleave click');
-  		}).find('.line');
-  		line.addClass('active');
+  		});
   	});
+
+
 
   });
 
-}($));
+  exports.Gradients = Gradients;
+
+  return exports;
+
+}({}, $));
