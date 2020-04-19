@@ -1,7 +1,7 @@
-var index = (function (exports, $) {
+(function ($$1) {
   'use strict';
 
-  $ = $ && $.hasOwnProperty('default') ? $['default'] : $;
+  $$1 = $$1 && $$1.hasOwnProperty('default') ? $$1['default'] : $$1;
 
   /*
     All RULES must have a test and message property
@@ -512,7 +512,7 @@ var index = (function (exports, $) {
     return EXPOSE;
   };
 
-  function Limits(pts){
+  function Limits(PTS){
     let LIMITS = {x:{},y:{}};
     const SET = function(axis,limit,pt){
       LIMITS[axis][limit].value = pt[axis];
@@ -520,15 +520,6 @@ var index = (function (exports, $) {
     };
     const ADD = function(axis,limit,pt){ LIMITS[axis][limit].points.push(pt);  };
     const UPDATE = function(axis,limit,pt){ SET(axis,limit,pt); ADD(axis,limit,pt);  };
-
-    LIMITS.x = {
-      min: { value: undefined, points: [] },
-      max: { value: undefined, points: [] }
-    };
-    LIMITS.y = {
-      min: { value: undefined, points: [] },
-      max: { value: undefined, points: [] }
-    };
 
     Object.defineProperties(this,{
       'get': {
@@ -543,18 +534,26 @@ var index = (function (exports, $) {
               min: { value: undefined, points: [] },
               max: { value: undefined, points: [] }
             };
-            
-          pts.get.forEach((pt)=>{
+
+          PTS.get.forEach((pt)=>{
             ['x','y'].forEach((axis,i)=>{
               if(LIMITS[axis].min.value === undefined ){
                 UPDATE(axis,'min',pt);
                 UPDATE(axis,'max',pt);
               }
-              if(pt[axis] < LIMITS[axis].min.value){
-                UPDATE(axis,'min',pt);
-              }
-              if( pt[axis] > LIMITS[axis].max.value){
-                UPDATE(axis,'max',pt);
+              else{
+                if(pt[axis] == LIMITS[axis].min.value){
+                  ADD(axis,'min',pt);
+                }
+                else if(pt[axis] < LIMITS[axis].min.value){
+                  UPDATE(axis,'min',pt);
+                }
+                else if(pt[axis] == LIMITS[axis].max.value){
+                  ADD(axis,'max',pt);
+                }
+                else if( pt[axis] > LIMITS[axis].max.value){
+                  UPDATE(axis,'max',pt);
+                }
               }
 
 
@@ -659,11 +658,7 @@ var index = (function (exports, $) {
       },
       'get': {
         enumerable: true,
-        get: ()=>{
-          let copy = [];
-          PTS.forEach((pt) => { copy.push(pt); });
-          return copy
-        }
+        get: ()=>{ return PTS.map((pt) => { return pt }); }
       },
       'find': {
         enumerable: true,
@@ -707,22 +702,28 @@ var index = (function (exports, $) {
         get: function(){ let limits = PTS.limits.get; return { x: limits.x.min.value + (this.width / 2), y: limits.y.min.value + (this.height / 2)  } }
       },
       'translate': {
+        configurable:true,
         enumerable: true,
         writable: false,
-        value: (x1,y1)=>{
-          // x1 and y1 = translate , x2 and y2 = origin
-          PTS.get.forEach((pt) => { pt.translate(x1,y1); });
+        value: (translate)=>{
+          let {x,y,origin} = translate;
+          x = (x - origin.x) + origin.x;
+          y = (y - origin.y) + origin.y;
+          PTS.get.forEach((pt) => { pt.translate(x,y); });
         }
       },
       'rotate':{
+        configurable:true,
         enumerable: true,
         writable: false,
         value: (degrees, origin) => { if(origin === undefined){ origin = this.center; } PTS.get.forEach((pt) => { pt.rotate(degrees, origin); }); }
       },
       'scale':{
+        configurable:true,
         enumerable: true,
         writable: false,
-        value: (size, origin) => {
+        value: (data) => {
+          let {size, origin} = data;
           PTS.get.forEach((pt) => {
             pt.x -= origin.x;
             pt.y -= origin.y;
@@ -739,9 +740,130 @@ var index = (function (exports, $) {
 
   }
 
+  function Group(data){
+    let test = Test([
+      [Rules.is.array,[data]],
+      [Rules.is.greaterThan,[data.length,2]]
+    ]);
+
+    Plane.call(this,new Points(data.reduce((pts,graphic)=>{
+      graphic.points.get.forEach((pt)=>{ pts.push(pt); });
+      return pts;
+    },[])));
+
+  }
+
+  var Tools = /*#__PURE__*/Object.freeze({
+    Group: Group
+  });
+
+  const ACTIONS = {
+    'scale': function(data){
+
+      let { origin, size } = data;
+      origin = origin();
+      if (this.progress === this.duration) {
+        data.pt = this.graphic.points.get;
+
+        let toggle = Math.round(data.pt[0].x) !== Math.round(origin.x);
+        data.x = data.pt[toggle ? 0 : 1].x;
+        data.pt = data.pt[toggle ? 0 : 1];
+
+        data.x -= origin.x;
+        data.step = ((data.x * size) - data.x) / this.duration;
+      }
+      else{
+        data.x = data.pt.x - origin.x;
+      }
+      data.size = (data.x + data.step)/data.x;
+
+      this.graphic.scale({size:data.size,origin});
+    },
+    'rotate': function(data){
+      this.graphic.transform.rotate(data.degrees/this.duration ,(typeof data.origin === 'function' ? data.origin() : data.origin) );
+    },
+    'translate': function(data){
+      let { origin } = data; origin = origin();
+      let x = data.x ? ((data.x - origin.x) / (this.progress)) + origin.x : 0;
+      let y = data.y ? ((data.y - origin.y) / (this.progress)) + origin.y : 0;
+
+      x = x ? (x - origin.x) : 0;
+      y = y ? (y - origin.y) : 0;
+
+      this.graphic.translate({ x, y ,origin});
+    },
+    'move': function(data){
+      let origin = (typeof data.origin === 'function' ? data.origin() : data.origin);
+      let x = typeof data.x === 'number' ? data.x/this.duration : undefined;
+      let y = typeof data.y === 'number' ? data.y/this.duration : undefined;
+      this.graphic.move({x,y},origin);
+    },
+    'width': function(data){
+      if(this.progress === this.duration){
+        if(typeof data.from == 'string'){
+          if(data.from == 'right'){ data.from = true; }
+          else{ data.from = false; }
+        }
+      }
+      let current = this.graphic.get.width();
+      let update = (data.width - current) / this.progress;
+      this.graphic.set.width(current+update,data.from);
+    },
+    'height': function(data){
+      if(this.progress === this.duration){
+        if(typeof data.from == 'string'){
+          if(data.from == 'bottom'){ data.from = true; }
+          else{ data.from = false; }
+        }
+      }
+      let current = this.graphic.get.height();
+      let update = (data.height - current) / this.progress;
+      this.graphic.set.height(current+update,data.from);
+    }
+  };
+
+  function Actions(actions){
+    const PERFORM = {};
+
+    let addAction = (graphic,action,name)=>{
+      Object.defineProperty(PERFORM,name,{
+        configurable:true,
+        enumerable: true,
+        writable: false,
+        value: Action(graphic,action)
+      });
+    };
+
+
+    for (let name in ACTIONS) { addAction(this,ACTIONS[name],name); }
+    for (let name in actions) { addAction(this,actions[name],name); }
+
+
+
+    return PERFORM;
+  }
+
+  function Action (GRAPHIC,ACTION) {
+
+    return (args,duration) => {
+      duration = Math.round(duration/10);
+      let progress = duration;
+      let execute = (resolve)=>{
+        setInterval(() => {
+          if(progress) { ACTION.apply( { graphic: GRAPHIC, duration, progress },[args]); progress--; }
+          else{ resolve(GRAPHIC); }
+        },10);
+      };
+
+      return new Promise(function (resolve, reject){ execute(resolve,reject); });
+
+    };
+
+  }
+
   const ID = Helpers.counter();
 
-  function Context(canvas){
+  function Context(canvas) {
     let test = Test([
       [Rules.is.object,[canvas]],
       [Rules.is.instanceOf,[canvas,CanvasRenderingContext2D]]
@@ -757,10 +879,10 @@ var index = (function (exports, $) {
       }
     };
     const SETUP = ()=>{
-      for (let prop in CONTEXT.properties) { CANVAS[prop] = CONTEXT.properties[prop]; }
+      for (let prop in CONTEXT.properties) { if(prop !== 'canvas'){ CANVAS[prop] = CONTEXT.properties[prop]; } }
     };
     for(let key in CANVAS){
-      if(typeof CANVAS[key] !== 'function' && key !== 'canvas'){ CONTEXT.properties[key] = CANVAS[key]; }
+      if(typeof CANVAS[key] !== 'function'){ CONTEXT.properties[key] = CANVAS[key]; }
       else{ CONTEXT.functions[key] = {state: false, args: [] }; }
     }
 
@@ -857,6 +979,11 @@ var index = (function (exports, $) {
       'id': {
         enumerable: true,
         get: ()=>{ return PROPS.id }
+      },
+      'actions':{
+        enumerable: true,
+        writable: false,
+        value: Actions.call(this,(data.actions || {}))
       }
     };
 
@@ -877,7 +1004,7 @@ var index = (function (exports, $) {
       [Rules.has.properties,[['start','finish'],data.angle]],
       [Rules.is.number,[data.angle.start]],
       [Rules.is.number,[data.angle.finish]]
-    ]) ;
+    ]);
 
     if(!test.passed){ throw test.error; }
 
@@ -934,10 +1061,9 @@ var index = (function (exports, $) {
     };
 
     {
-      let x = data.x, xr = x + PROPS.radius;
-      let y = data.y, yr = y + PROPS.radius;
+      let x = data.x, y = data.y, r = PROPS.radius;
 
-      let pts = [[x,y],[xr,y],[xr,yr],[x,yr]];
+      let pts = [[x-r,y-r],[x+r,y-r],[x+r,y+r],[x-r,y+r]];
 
       Graphic.call(this,{canvas: data.canvas, points: pts});
     }
@@ -1030,18 +1156,19 @@ var index = (function (exports, $) {
   }
 
   function RadialGradient(data){
+    let {radials,canvas} = data;
     // let test = Test([
     //   [Rules.is.object,[data]],
-    //   [Rules.has.properties,[['x','y','w','h','radials','canvas'],data]],
-    //   [Rules.is.array,[data.radials]],
+    //   [Rules.has.properties,[['x','y','radials','canvas'],data]],
+    //   [Rules.is.array,[radials]],
     //   [Rules.has.arrayLength,[data.radials,2]]
-    //   [Rules.is.number,[data.w]],
-    //   [Rules.is.number,[data.h]]
+    //   [Rules.is.number,[data.x]],
+    //   [Rules.is.number,[data.y]]
     // ]);
     //
     // if(!test.passed){ throw test.error; }
     let test = undefined;
-    if(data.radials.some((data)=>{
+    if(radials.some((data)=>{
       test = Test([
         [Rules.is.object,[data]],
         [Rules.has.properties,[['x','y','r'],data]],
@@ -1054,26 +1181,41 @@ var index = (function (exports, $) {
 
     function Radial(x,y,r){
 
+      const INSTANCE = this;
+      let pts = [[x-r,y-r],[x+r,y-r],[x+r,y+r],[x-r,y+r]];
+      pts = pts.map((axis)=>{ return new Point(axis[0],axis[1]); });
+      pts = new Points(pts);
+
       const METHODS = {
-        'x':{
+        'radius':{
           enumerable: true,
-          get:()=>{ return x; },
-          set:(value)=>{ x = value; }
+          get: ()=>{ return r; },
+          set: (value)=>{ r = value; }
         },
-        'y':{
+        'circumference':{
           enumerable: true,
-          get:()=>{ return y; },
-          set:(value)=>{ y = value; }
+          get: ()=>{ return r*2; }
         },
-        'r':{
+        'scale': {
           enumerable: true,
-          get:()=>{ return r; },
-          set:(value)=>{ r = value; }
+          writable: false,
+          value: function(){
+            let scale = INSTANCE.scale;
+            return function(data){
+              let {size,origin} = data;
+              this.radius = (this.radius * size);
+              scale(data);
+            }
+          }
         },
       };
 
+      Plane.call(this,pts);
+      METHODS.scale.value = METHODS.scale.value();
       Object.defineProperties(this,METHODS);
     }
+
+    const Space = new Rectangle({x:0,y:0,w:canvas.canvas.width,h:canvas.canvas.height,canvas:canvas});
 
     const METHODS = {
       'radials':{
@@ -1105,31 +1247,49 @@ var index = (function (exports, $) {
           Object.defineProperties(OBJ,METHODS);
           return OBJ;
         })()
+      },
+      'render': {
+        enumerable: true,
+        writable: false,
+        value: function () {
+          Space.render();
+
+          let [r1,r2] = this.radials;
+          let c1 = r1.center, c2 = r2.center;
+          let gradient = PROPS.context.createRadialGradient(c1.x,c1.y,r1.radius,c2.x,c2.y,r2.radius);
+          this.colorStops.get.forEach((data)=>{ gradient.addColorStop(data.stop,data.color); });
+          Space.context.fillStyle = gradient;
+        }
+      },
+      'scale':{
+        enumerable: true,
+        writable: false,
+        value: function(data){
+          this.radials.forEach((r)=>{  r.scale(data); });
+        }
+      },
+      'actions':{
+        enumerable: true,
+        writable: false,
+        value: Actions.call(this,(data.actions || {}))
+      },
+      'space':{
+        enumerable: true,
+        get:()=>{ return Space; }
       }
     };
 
     const PROPS = {
-      radials: [],
-      colorStops: {}
+      radials: radials.map((radial)=>{ return new Radial(radial.x,radial.y,radial.r); }),
+      colorStops: {},
+      context: canvas
     };
 
-    let x = data.x, w = x+data.w;
-    let y = data.y, h = y+data.h;
-    let points = [[x,y],[w,y],[w,h],[x,h]];
-    data.radials.forEach((radial,i)=>{ PROPS.radials.push(new Radial(radial.x,radial.y,radial.r)); });
+    Group.call(this,PROPS.radials);
 
-    Graphic.call(this,{points,canvas:data.canvas});
     Object.defineProperties(this,METHODS);
-    this.render = function () {
-      let pts = this.graphic.points.get;
-      this.canvas.moveTo(pts[0].x, pts[0].y);
-      pts.forEach((pt) => { this.canvas.lineTo(pt.x, pt.y); });
 
-      let radials = this.graphic.radials;
-      let gradient = this.canvas.createRadialGradient(radials[0].x,radials[0].y,radials[0].r,radials[1].x,radials[1].y,radials[1].r);
-      this.graphic.colorStops.get.forEach((data)=>{ gradient.addColorStop(data.stop,data.color); });
-      this.canvas.fillStyle = gradient;
-    };
+
   }
 
   var Graphics = /*#__PURE__*/Object.freeze({
@@ -1404,78 +1564,203 @@ var index = (function (exports, $) {
       value:new graphicsBuilder(METHODS.layers.value)
     };
 
-
+    METHODS.tools = {
+      enumerable: true,
+      writable: false,
+      value: (()=>{
+        const TOOLS = {};
+        for(let type in Tools){
+          Object.defineProperty(TOOLS,type.toLowerCase(),{
+            enumerable: true,
+            writable: false,
+            value: function(data){
+              return new Tools[type](data);
+            }
+          });
+        }
+        return TOOLS;
+      })()
+    };
 
     Object.defineProperties(this,METHODS);
   }
 
-  const Gradients = [];
+  function Gradients(){
+    const EXPOSE = {};
+    const GRADIENTS = {};
+    const Elements = {
+      container: $('#gradients')
+    };
 
-  $(document).ready(function(){
-  	let container = document.createElement('div');
-  	container.style.height = window.innerHeight+'px';
-  	container.style.width = window.innerWidth+'px';
-  	document.querySelector('body').append(container);
+    Elements.container.width(window.innerWidth);
+    Elements.container.height(window.innerHeight);
+    const doodle = new Doodle({container:Elements.container[0]});
+    // let g = doodle.graphics.create.rectangle({
+    //   w: window.innerWidth,
+    //   h: window.innerHeight,
+    //   x: 0, y:0
+    // });
+    // g.context.fillStyle = 'white';
 
-  	let doodle = new Doodle({container});
-  	let g = doodle.graphics.create.rectangle({
-  		w: window.innerWidth,
-  		h: window.innerHeight,
-  		x: 0, y:0
-  	});
+    function deviceDimensions(){
+      let w = window.innerWidth;
+      let h = window.innerHeight;
+      let size = '';
 
-  	[
-  		[
-  			{
-  				x: 0, y:0,
-  				w: window.innerWidth,
-  				h: window.innerHeight,
-  				radials: (()=>{
-  					let x = window.innerWidth, y = window.innerHeight;
-  					return [{x:x+200,y:y+200,r:1000},{x,y,r:100}]
-  				})()
-  			},
-  			[[0,'#f6e8fd'],[0.9,'#c29ad6'],[1,'#d02a86']]
-  		],
-  		[
-  			{
-  				x: 0, y:0,
-  				w: window.innerWidth,
-  				h: window.innerHeight,
-  				radials: (()=>{
-  					let x = 0, y = 100;
-  					return [{x,y,r:400},{x,y,r:20}];
-  				})()
-  			},
-  			[[0,'#f5deb3b3'],[1,'#ffdc5f94']]
-  		],
-  	].forEach((args)=>{
-  		let g = doodle.graphics.create.radialgradient.call(null,args[0]);
-  		args[1].forEach((data)=>{ g.colorStops.add.apply(null,data);} );
-  		Gradients.push(g);
-  	});
+      if(w <= 640){ size = 'sm'; }
+      else if( w <= 758 ){ size = 'md'; }
+      else if( w <= 1024 ){ size = 'lg'; }
+      else { size = 'xl'; }
 
-  	$('a').on('mouseenter',function(){
-  		let a = $(this), line = a.find('.line');
-  		line.addClass('active');
-  		a.on('click',function(e){
-  			e.preventDefault();
-  			$('.line').removeClass('active');
-  			line.addClass('active');
-  			a.off('mouseleave');
-  		});
-  		a.on('mouseleave',function(){
-  			line.removeClass('active');
-  			a.off('mouseleave click');
-  		});
-  	});
+      return {w,h,size}
+
+    }
+
+    GRADIENTS['purple-red'] = {
+      sizes:()=>{
+        let x = window.innerWidth, y = window.innerHeight;
+        let device = deviceDimensions();
+
+        return {
+          sm:{
+            radials: [ { x,y,r:x }, {x,y,r:10} ],
+            scale: { active: 2, inactive:.5 }
+          },
+          md:{
+            radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
+            scale: { active: 2, inactive:.5 }
+          },
+          lg:{
+            radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
+            scale: { active: 2, inactive:.5 }
+          },
+          xl:{
+            radials: [ { x,y,r:device.w }, {x:device.w,y:y ,r:device.w/20} ],
+            scale: { active: 2, inactive:.5 }
+          }
+        }
+
+      },
+      colorStops: [[0,'#f6e8fd'],[0.9,'#5f70d0a6'],[1,'#d02a86']]
+    };
+
+    GRADIENTS['light-brown'] = {
+      sizes: ()=>{
+        let x = 0, y = 0;
+        let device = deviceDimensions();
+        return {
+          sm:{
+            radials: [ { x,y,r: device.w/2 }, {x,y,r: device.w/3} ],
+            scale: { active: 2, inactive:.5 }
+          },
+          md:{
+            radials: [ { x,y,r:device.w/3 }, {x,y,r:100} ],
+            scale: { active: 2, inactive:.5 }
+          },
+          lg:{
+            radials: [ { x,y,r:device.w/4 }, {x,y,r:100} ],
+            scale: { active: 2, inactive:.5 }
+          },
+          xl:{
+            radials: [ { x,y,r:device.w/4 }, {x,y,r:100} ],
+            scale: { active: 2, inactive:.5 }
+          }
+        }
+
+      },
+      colorStops: [[0,'#f5deb3b3'],[1,'#ffdc5f94']]
+    };
+    //
+    // GRADIENTS['dark-green'] = {
+    //   sizes:{
+    //     sm:{
+    //       radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
+    //       scale: { active: 2, inactive:.5 }
+    //     },
+    //     md:{
+    //       radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
+    //       scale: { active: 2, inactive:.5 }
+    //     },
+    //     lg:{
+    //       radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
+    //       scale: { active: 2, inactive:.5 }
+    //     }
+    //   },
+    //   colorStops: [[0,'#14442600'],[.9,'#144426ed']]
+    // }
 
 
+      for (let name in GRADIENTS) {
+        let g = GRADIENTS[name];
+        let device = deviceDimensions();
+        let radials = { radials:g.sizes()[device.size].radials };
+        EXPOSE[name] = doodle.graphics.create.radialgradient.call(null,radials);
+        console.log(EXPOSE[name]);
+        g.colorStops.forEach((c)=>{ EXPOSE[name].colorStops.add.apply(null,c);});
+      }
+
+      window.addEventListener('resize',function(){
+        let device = deviceDimensions();
+        doodle.layers.get().forEach((l)=>{ l.context.canvas.width = device.w; l.context.canvas.h = device.h; });
+        for(let name in EXPOSE){
+          let g = EXPOSE[name];
+          GRADIENTS[name].sizes()[device.size].radials.forEach((obj,i)=>{ g.radials[i].radius = obj.r; });
+        }
+      });
+
+    return EXPOSE;
+
+  }
+
+  function Home(){
+    const ACTIONS = {};
+    const ELEMENTS = {
+      a: $('#nombre a, nav a')
+    };
+    const STATE = {
+      active: undefined
+    };
+
+    ELEMENTS.a.each(function(){ ELEMENTS[$(this).attr('href')] = $(this); });
+
+    ACTIONS.strike = function(){
+      let a = $(this);
+      a.addClass('strike');
+    };
+    ACTIONS.unstrike = function(){
+      let a = $(this);
+      if(!a.hasClass('active')){ a.removeClass('strike'); }
+    };
+    ACTIONS.activate = function(e){
+      e.preventDefault();
+      let a = $(this);
+      if(!a.hasClass('active')){
+        ELEMENTS.a.removeClass('active strike');
+        a.addClass('active strike');
+        STATE.active = a.attr('href');
+      }
+    };
+
+    return {
+      elements: ELEMENTS,
+      actions: ACTIONS
+    }
+
+  }
+
+
+
+
+  function Sections(){ return {home:Home()} }
+
+  $$1(document).ready(function(){
+  	const gradients = Gradients();
+  	const sections = Sections();
+
+  	sections.home.elements.a.on('mouseenter',sections.home.actions.strike);
+  	sections.home.elements.a.on('mouseleave',sections.home.actions.unstrike);
+  	sections.home.elements.a.on('click',sections.home.actions.activate);
 
   });
 
-  exports.Gradients = Gradients;
-
-  return exports;
-
-}({}, $));
+}($));
