@@ -1588,19 +1588,14 @@
   function Gradients(){
     const EXPOSE = {};
     const GRADIENTS = {};
-    const Elements = {
-      container: $('#gradients')
+    const CONTAINER =  $('#gradients');
+    const STATE = {
+      active: ''
     };
-
-    Elements.container.width(window.innerWidth);
-    Elements.container.height(window.innerHeight);
-    const doodle = new Doodle({container:Elements.container[0]});
-    // let g = doodle.graphics.create.rectangle({
-    //   w: window.innerWidth,
-    //   h: window.innerHeight,
-    //   x: 0, y:0
-    // });
-    // g.context.fillStyle = 'white';
+    CONTAINER.width(window.innerWidth);
+    CONTAINER.height(window.innerHeight);
+    const doodle = new Doodle({container:CONTAINER[0]});
+    const CANVAS = doodle.layers.get(0);
 
     function deviceDimensions(){
       let w = window.innerWidth;
@@ -1614,6 +1609,15 @@
 
       return {w,h,size}
 
+    }
+    function init(){
+      for (let name in GRADIENTS) {
+        let g = GRADIENTS[name];
+        let device = deviceDimensions();
+        let radials = { radials:g.sizes()[device.size].radials };
+        EXPOSE[name] = doodle.graphics.create.radialgradient.call(null,radials);
+        g.colorStops.forEach((c)=>{ EXPOSE[name].colorStops.add.apply(null,c);});
+      }
     }
 
     GRADIENTS['purple-red'] = {
@@ -1651,19 +1655,19 @@
         return {
           sm:{
             radials: [ { x,y,r: device.w/2 }, {x,y,r: device.w/3} ],
-            scale: { active: 2, inactive:.5 }
+            scale: { active: 5, inactive:.125 }
           },
           md:{
             radials: [ { x,y,r:device.w/3 }, {x,y,r:100} ],
-            scale: { active: 2, inactive:.5 }
+            scale: { active: 5, inactive:.5 }
           },
           lg:{
             radials: [ { x,y,r:device.w/4 }, {x,y,r:100} ],
-            scale: { active: 2, inactive:.5 }
+            scale: { active: 5, inactive:.5 }
           },
           xl:{
             radials: [ { x,y,r:device.w/4 }, {x,y,r:100} ],
-            scale: { active: 2, inactive:.5 }
+            scale: { active: 5, inactive:.5 }
           }
         }
 
@@ -1690,25 +1694,9 @@
     // }
 
 
-      for (let name in GRADIENTS) {
-        let g = GRADIENTS[name];
-        let device = deviceDimensions();
-        let radials = { radials:g.sizes()[device.size].radials };
-        EXPOSE[name] = doodle.graphics.create.radialgradient.call(null,radials);
-        console.log(EXPOSE[name]);
-        g.colorStops.forEach((c)=>{ EXPOSE[name].colorStops.add.apply(null,c);});
-      }
+    init();
 
-      window.addEventListener('resize',function(){
-        let device = deviceDimensions();
-        doodle.layers.get().forEach((l)=>{ l.context.canvas.width = device.w; l.context.canvas.h = device.h; });
-        for(let name in EXPOSE){
-          let g = EXPOSE[name];
-          GRADIENTS[name].sizes()[device.size].radials.forEach((obj,i)=>{ g.radials[i].radius = obj.r; });
-        }
-      });
-
-    return EXPOSE;
+    return { elements: EXPOSE, state: STATE, container: CONTAINER };
 
   }
 
@@ -1756,10 +1744,17 @@
   $$1(document).ready(function(){
   	const gradients = Gradients();
   	const sections = Sections();
+  	console.log(gradients);
 
   	sections.home.elements.a.on('mouseenter',sections.home.actions.strike);
   	sections.home.elements.a.on('mouseleave',sections.home.actions.unstrike);
   	sections.home.elements.a.on('click',sections.home.actions.activate);
+  	sections.home.elements.about.on('click',()=>{
+  		gradients.state.active = 'light-brown';
+  		let g = gradients.elements['light-brown'];
+  		console.log(g);
+  		g.actions.scale({size:5,origin:()=>{ return g.center }},1000);
+  	});
 
   });
 

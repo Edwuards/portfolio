@@ -3,19 +3,15 @@ import { Doodle } from './doodle.js';
 function Gradients(){
   const EXPOSE = {};
   const GRADIENTS = {};
-  const Elements = {
-    container: $('#gradients')
-  }
-
-  Elements.container.width(window.innerWidth);
-  Elements.container.height(window.innerHeight);
-  const doodle = new Doodle({container:Elements.container[0]});
-  // let g = doodle.graphics.create.rectangle({
-  //   w: window.innerWidth,
-  //   h: window.innerHeight,
-  //   x: 0, y:0
-  // });
-  // g.context.fillStyle = 'white';
+  const CONTAINER =  $('#gradients');
+  const ACTIONS = {};
+  const STATE = {
+    active: ''
+  };
+  CONTAINER.width(window.innerWidth);
+  CONTAINER.height(window.innerHeight);
+  const doodle = new Doodle({container:CONTAINER[0]});
+  const CANVAS = doodle.layers.get(0);
 
   function deviceDimensions(){
     let w = window.innerWidth;
@@ -30,6 +26,38 @@ function Gradients(){
     return {w,h,size}
 
   }
+  function init(){
+    for (let name in GRADIENTS) {
+      let g = GRADIENTS[name];
+      let device = deviceDimensions();
+      let radials = { radials:g.sizes()[device.size].radials };
+      EXPOSE[name] = doodle.graphics.create.radialgradient.call(null,radials);
+      g.colorStops.forEach((c)=>{ EXPOSE[name].colorStops.add.apply(null,c)})
+    }
+  }
+
+  ACTIONS.resize = ()=>{
+
+    let device = deviceDimensions();
+    CANVAS.context.canvas.width = device.w; CANVAS.context.canvas.h = device.h;
+
+    for (let name  in EXPOSE) {
+        let gradient = EXPOSE[name];
+        let { radials, scale } = GRADIENTS[name].sizes()[device.size];
+        gradient.radials.forEach((r,i)=>{
+          let center = r.center;
+          let radial = radials[i];
+          let x = (radial.x - center.x);
+          let y = (radial.y - center.y);
+          r.radius = radial.r;
+          r.translate({x,y,origin:center});
+          center = r.center;
+          if(STATE.active == name){ r.scale({size: scale.active, origin: center })}
+        })
+        gradient.space.points.limits.get.x.max.points.forEach((pt)=>{ pt.x = device.w; });
+    }
+
+  };
 
   GRADIENTS['purple-red'] = {
     sizes:()=>{
@@ -66,19 +94,19 @@ function Gradients(){
       return {
         sm:{
           radials: [ { x,y,r: device.w/2 }, {x,y,r: device.w/3} ],
-          scale: { active: 2, inactive:.5 }
+          scale: { active: 5, inactive:.125 }
         },
         md:{
           radials: [ { x,y,r:device.w/3 }, {x,y,r:100} ],
-          scale: { active: 2, inactive:.5 }
+          scale: { active: 5, inactive:.5 }
         },
         lg:{
           radials: [ { x,y,r:device.w/4 }, {x,y,r:100} ],
-          scale: { active: 2, inactive:.5 }
+          scale: { active: 5, inactive:.5 }
         },
         xl:{
           radials: [ { x,y,r:device.w/4 }, {x,y,r:100} ],
-          scale: { active: 2, inactive:.5 }
+          scale: { active: 5, inactive:.5 }
         }
       }
 
@@ -104,26 +132,9 @@ function Gradients(){
   //   colorStops: [[0,'#14442600'],[.9,'#144426ed']]
   // }
 
+  init();
 
-    for (let name in GRADIENTS) {
-      let g = GRADIENTS[name];
-      let device = deviceDimensions();
-      let radials = { radials:g.sizes()[device.size].radials };
-      EXPOSE[name] = doodle.graphics.create.radialgradient.call(null,radials);
-      console.log(EXPOSE[name]);
-      g.colorStops.forEach((c)=>{ EXPOSE[name].colorStops.add.apply(null,c)})
-    }
-
-    window.addEventListener('resize',function(){
-      let device = deviceDimensions();
-      doodle.layers.get().forEach((l)=>{ l.context.canvas.width = device.w; l.context.canvas.h = device.h; })
-      for(let name in EXPOSE){
-        let g = EXPOSE[name];
-        GRADIENTS[name].sizes()[device.size].radials.forEach((obj,i)=>{ g.radials[i].radius = obj.r; })
-      }
-    })
-
-  return EXPOSE;
+  return { elements: EXPOSE, state: STATE, container: CONTAINER };
 
 }
 

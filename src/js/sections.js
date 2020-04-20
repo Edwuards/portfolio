@@ -37,4 +37,4 @@ function Home(){
 
 
 
-export default function(){ return {home:Home()} };
+export default { HOME: Home, };
