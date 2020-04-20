@@ -1,3 +1,4 @@
+@charset "UTF-8";
 /*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */
 /* Document
    ========================================================================== */
@@ -8303,11 +8304,11 @@ video {
   transform: rotate(90deg) translate(-43px, -43px);
   transform-origin: left; }
 
-a .line {
+a .línea {
   left: -100%;
   transition: left .5s; }
 
-a.strike .line {
+a.marcar .línea {
   left: 0px; }
 
 @media (min-width: 640px) {

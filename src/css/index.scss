@@ -12,14 +12,14 @@
 }
 
   a{
-    .line{
+    .línea{
       left: -100%;
       transition: left .5s;
     }
   }
 
-  a.strike{
-    .line{
+  a.marcar{
+    .línea{
       left: 0px;
     }
   }

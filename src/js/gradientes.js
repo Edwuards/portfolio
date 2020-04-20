@@ -1,19 +1,19 @@
 import { Doodle } from './doodle.js';
 
-function Gradients(){
-  const EXPOSE = {};
-  const GRADIENTS = {};
-  const CONTAINER =  $('#gradients');
-  const ACTIONS = {};
-  const STATE = {
-    active: ''
+export default function(){
+  const Elementos = {};
+  const Gradientes = {};
+  const Contenedor =  $('#gradients');
+  const Acciones = {};
+  const Estado = {
+    activo: ''
   };
-  CONTAINER.width(window.innerWidth);
-  CONTAINER.height(window.innerHeight);
-  const doodle = new Doodle({container:CONTAINER[0]});
+  Contenedor.width(window.innerWidth);
+  Contenedor.height(window.innerHeight);
+  const doodle = new Doodle({container:Contenedor[0]});
   const CANVAS = doodle.layers.get(0);
 
-  function deviceDimensions(){
+  function DimensionesDePantalla(){
     let w = window.innerWidth;
     let h = window.innerHeight;
     let size = '';
@@ -26,24 +26,24 @@ function Gradients(){
     return {w,h,size}
 
   }
-  function init(){
-    for (let name in GRADIENTS) {
-      let g = GRADIENTS[name];
-      let device = deviceDimensions();
-      let radials = { radials:g.sizes()[device.size].radials };
-      EXPOSE[name] = doodle.graphics.create.radialgradient.call(null,radials);
-      g.colorStops.forEach((c)=>{ EXPOSE[name].colorStops.add.apply(null,c)})
+  function iniciar(){
+    for (let name in Gradientes) {
+      let g = Gradientes[name];
+      let pantalla = DimensionesDePantalla();
+      let radials = { radials:g.tamaños()[pantalla.size].radials };
+      Elementos[name] = doodle.graphics.create.radialgradient.call(null,radials);
+      g.colorStops.forEach((c)=>{ Elementos[name].colorStops.add.apply(null,c)})
     }
   }
 
-  ACTIONS.resize = ()=>{
+  Acciones.resize = ()=>{
 
-    let device = deviceDimensions();
-    CANVAS.context.canvas.width = device.w; CANVAS.context.canvas.h = device.h;
+    let pantalla = DimensionesDePantalla();
+    CANVAS.context.canvas.width = pantalla.w; CANVAS.context.canvas.h = pantalla.h;
 
-    for (let name  in EXPOSE) {
-        let gradient = EXPOSE[name];
-        let { radials, scale } = GRADIENTS[name].sizes()[device.size];
+    for (let name  in Elementos) {
+        let gradient = Elementos[name];
+        let { radials, scale } = Gradientes[name].tamaños()[pantalla.size];
         gradient.radials.forEach((r,i)=>{
           let center = r.center;
           let radial = radials[i];
@@ -52,17 +52,17 @@ function Gradients(){
           r.radius = radial.r;
           r.translate({x,y,origin:center});
           center = r.center;
-          if(STATE.active == name){ r.scale({size: scale.active, origin: center })}
+          if(Estado.activo == name){ r.scale({size: scale.active, origin: center })}
         })
-        gradient.space.points.limits.get.x.max.points.forEach((pt)=>{ pt.x = device.w; });
+        gradient.space.points.limits.get.x.max.points.forEach((pt)=>{ pt.x = pantalla.w; });
     }
 
   };
 
-  GRADIENTS['purple-red'] = {
-    sizes:()=>{
+  Gradientes['rojo-morado'] = {
+    tamaños:()=>{
       let x = window.innerWidth, y = window.innerHeight;
-      let device = deviceDimensions();
+      let pantalla = DimensionesDePantalla();
 
       return {
         sm:{
@@ -78,7 +78,7 @@ function Gradients(){
           scale: { active: 2, inactive:.5 }
         },
         xl:{
-          radials: [ { x,y,r:device.w }, {x:device.w,y:y ,r:device.w/20} ],
+          radials: [ { x,y,r:pantalla.w }, {x:pantalla.w,y:y ,r:pantalla.w/20} ],
           scale: { active: 2, inactive:.5 }
         }
       }
@@ -87,25 +87,25 @@ function Gradients(){
     colorStops: [[0,'#f6e8fd'],[0.9,'#5f70d0a6'],[1,'#d02a86']]
   }
 
-  GRADIENTS['light-brown'] = {
-    sizes: ()=>{
+  Gradientes['café-claro'] = {
+    tamaños: ()=>{
       let x = 0, y = 0;
-      let device = deviceDimensions();
+      let pantalla = DimensionesDePantalla();
       return {
         sm:{
-          radials: [ { x,y,r: device.w/2 }, {x,y,r: device.w/3} ],
+          radials: [ { x,y,r: pantalla.w/2 }, {x,y,r: pantalla.w/3} ],
           scale: { active: 5, inactive:.125 }
         },
         md:{
-          radials: [ { x,y,r:device.w/3 }, {x,y,r:100} ],
+          radials: [ { x,y,r:pantalla.w/3 }, {x,y,r:100} ],
           scale: { active: 5, inactive:.5 }
         },
         lg:{
-          radials: [ { x,y,r:device.w/4 }, {x,y,r:100} ],
+          radials: [ { x,y,r:pantalla.w/4 }, {x,y,r:100} ],
           scale: { active: 5, inactive:.5 }
         },
         xl:{
-          radials: [ { x,y,r:device.w/4 }, {x,y,r:100} ],
+          radials: [ { x,y,r:pantalla.w/4 }, {x,y,r:100} ],
           scale: { active: 5, inactive:.5 }
         }
       }
@@ -114,8 +114,8 @@ function Gradients(){
     colorStops: [[0,'#f5deb3b3'],[1,'#ffdc5f94']]
   }
   //
-  // GRADIENTS['dark-green'] = {
-  //   sizes:{
+  // Gradientes['dark-green'] = {
+  //   tamaños:{
   //     sm:{
   //       radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
   //       scale: { active: 2, inactive:.5 }
@@ -132,10 +132,8 @@ function Gradients(){
   //   colorStops: [[0,'#14442600'],[.9,'#144426ed']]
   // }
 
-  init();
+  iniciar();
 
-  return { elements: EXPOSE, state: STATE, container: CONTAINER };
+  return { elementos: Elementos, estado: Estado, contenedor: Contenedor };
 
 }
-
-export { Gradients }

@@ -1,8 +1,8 @@
 export default {
   external:['jquery'],
-  input: 'src/js/index.js',
+  input: 'src/js/índice.js',
   output:{
-    file: 'public/js/index.js',
+    file: 'public/js/índice.js',
     name:'index',
     format: 'iife',
     globals:{
