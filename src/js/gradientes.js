@@ -13,7 +13,7 @@ export default function(){
   const doodle = new Doodle({container:Contenedor[0]});
   const CANVAS = doodle.layers.get(0);
 
-  function DimensionesDePantalla(){
+  function dimensionesDePantalla(){
     let w = window.innerWidth;
     let h = window.innerHeight;
     let size = '';
@@ -29,16 +29,72 @@ export default function(){
   function iniciar(){
     for (let name in Gradientes) {
       let g = Gradientes[name];
-      let pantalla = DimensionesDePantalla();
+      let pantalla = dimensionesDePantalla();
       let radials = { radials:g.tamaños()[pantalla.size].radials };
       Elementos[name] = doodle.graphics.create.radialgradient.call(null,radials);
       g.colorStops.forEach((c)=>{ Elementos[name].colorStops.add.apply(null,c)})
     }
   }
 
+
+  Gradientes['rojo-morado'] = {
+    tamaños:()=>{
+      let x = window.innerWidth, y = window.innerHeight;
+      let pantalla = dimensionesDePantalla();
+
+      return {
+        sm:{
+          radials: [ { x,y,r:x }, {x,y,r:10} ],
+          scale: { activar: 2, desactivar:.5 }
+        },
+        md:{
+          radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
+          scale: { activar: 2, desactivar:.5 }
+        },
+        lg:{
+          radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
+          scale: { activar: 2, desactivar:.5 }
+        },
+        xl:{
+          radials: [ { x,y,r:pantalla.w }, {x:pantalla.w,y:y ,r:pantalla.w/20} ],
+          scale: { activar: 2, desactivar:.5 }
+        }
+      }
+
+    },
+    colorStops: [[0,'#f6e8fd'],[0.9,'#5f70d0a6'],[1,'#d02a86']]
+  }
+
+  Gradientes['café-claro'] = {
+    tamaños: ()=>{
+      let x = 0, y = 0;
+      let pantalla = dimensionesDePantalla();
+      return {
+        sm:{
+          radials: [ { x,y,r: pantalla.w/2 }, {x,y,r: pantalla.w/3} ],
+          scale: { activar: 5, desactivar:.125 }
+        },
+        md:{
+          radials: [ { x,y,r:pantalla.w/3 }, {x,y,r:100} ],
+          scale: { activar: 5, desactivar:.5 }
+        },
+        lg:{
+          radials: [ { x,y,r:pantalla.w/4 }, {x,y,r:100} ],
+          scale: { activar: 5, desactivar:.5 }
+        },
+        xl:{
+          radials: [ { x,y,r:pantalla.w/4 }, {x,y,r:100} ],
+          scale: { activar: 5, desactivar:.5 }
+        }
+      }
+
+    },
+    colorStops: [[0,'#f5deb3b3'],[1,'#ffdc5f94']]
+  }
+
   Acciones.resize = ()=>{
 
-    let pantalla = DimensionesDePantalla();
+    let pantalla = dimensionesDePantalla();
     CANVAS.context.canvas.width = pantalla.w; CANVAS.context.canvas.h = pantalla.h;
 
     for (let name  in Elementos) {
@@ -52,88 +108,32 @@ export default function(){
           r.radius = radial.r;
           r.translate({x,y,origin:center});
           center = r.center;
-          if(Estado.activo == name){ r.scale({size: scale.active, origin: center })}
+          if(Estado.activo == name){ r.scale({size: scale.activar, origin: center })}
         })
         gradient.space.points.limits.get.x.max.points.forEach((pt)=>{ pt.x = pantalla.w; });
     }
 
   };
-
-  Gradientes['rojo-morado'] = {
-    tamaños:()=>{
-      let x = window.innerWidth, y = window.innerHeight;
-      let pantalla = DimensionesDePantalla();
-
-      return {
-        sm:{
-          radials: [ { x,y,r:x }, {x,y,r:10} ],
-          scale: { active: 2, inactive:.5 }
-        },
-        md:{
-          radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
-          scale: { active: 2, inactive:.5 }
-        },
-        lg:{
-          radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
-          scale: { active: 2, inactive:.5 }
-        },
-        xl:{
-          radials: [ { x,y,r:pantalla.w }, {x:pantalla.w,y:y ,r:pantalla.w/20} ],
-          scale: { active: 2, inactive:.5 }
-        }
-      }
-
-    },
-    colorStops: [[0,'#f6e8fd'],[0.9,'#5f70d0a6'],[1,'#d02a86']]
+  Acciones.activar = (gradiente)=>{
+    if(Gradientes[gradiente]){
+      let pantalla = dimensionesDePantalla();
+      let {scale, radials} = Gradientes[gradiente].tamaños()[pantalla.size];
+      Estado.activo = gradiente;
+      gradiente = Elementos[gradiente];
+      return gradiente.actions.scale({
+        size: scale.activar ,
+        origin: ()=>{ return gradiente.center; }
+      },1000);
+    }
   }
-
-  Gradientes['café-claro'] = {
-    tamaños: ()=>{
-      let x = 0, y = 0;
-      let pantalla = DimensionesDePantalla();
-      return {
-        sm:{
-          radials: [ { x,y,r: pantalla.w/2 }, {x,y,r: pantalla.w/3} ],
-          scale: { active: 5, inactive:.125 }
-        },
-        md:{
-          radials: [ { x,y,r:pantalla.w/3 }, {x,y,r:100} ],
-          scale: { active: 5, inactive:.5 }
-        },
-        lg:{
-          radials: [ { x,y,r:pantalla.w/4 }, {x,y,r:100} ],
-          scale: { active: 5, inactive:.5 }
-        },
-        xl:{
-          radials: [ { x,y,r:pantalla.w/4 }, {x,y,r:100} ],
-          scale: { active: 5, inactive:.5 }
-        }
-      }
-
-    },
-    colorStops: [[0,'#f5deb3b3'],[1,'#ffdc5f94']]
-  }
-  //
-  // Gradientes['dark-green'] = {
-  //   tamaños:{
-  //     sm:{
-  //       radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
-  //       scale: { active: 2, inactive:.5 }
-  //     },
-  //     md:{
-  //       radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
-  //       scale: { active: 2, inactive:.5 }
-  //     },
-  //     lg:{
-  //       radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
-  //       scale: { active: 2, inactive:.5 }
-  //     }
-  //   },
-  //   colorStops: [[0,'#14442600'],[.9,'#144426ed']]
-  // }
 
   iniciar();
 
-  return { elementos: Elementos, estado: Estado, contenedor: Contenedor };
+  return {
+    elementos: Elementos,
+    estado: Estado,
+    contenedor: Contenedor,
+    acciones: Acciones
+   };
 
 }

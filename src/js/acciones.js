@@ -8,7 +8,26 @@ export default function(){
   const Elementos = {}
   const Gradientes = GradientesInit();
 
-  Acciones.show = {};
+  Acciones.transición = (gradiente)=>{
+    if(gradiente != Gradientes.estado.activo){
+      let activo = Gradientes.estado.activo;
+      if(activo == ''){ Gradientes.acciones.activar(gradiente); }
+      else{
+        Gradientes.acciones.desactivar(activo).then(()=>{
+          Gradientes.acciones.activar(gradiente);
+        });
+      }
+    }
+
+  }
+  Acciones.mostrar = {};
+  Acciones.mostrar.sección = (elemento)=>{
+    let secciones = {
+      'sobreMí':'café-claro'
+    };
+    Acciones.transición(secciones[elemento.attr('href')]);
+
+  }
   Acciones.marcarElemento = function(){
     let elemento = $(this);
     Secciones.acciones.marcar(elemento);
@@ -18,13 +37,12 @@ export default function(){
       Secciones.acciones.desmarcar(elemento);
     });
   };
-  Acciones.activarSección = function(e){
+  Acciones.activar = {};
+  Acciones.activar.sección = function(e){
     e.preventDefault();
     let elemento = $(this);
     Secciones.acciones.activar(elemento);
-    // Gradientes.estado.activo = 'café-claro';
-    // let g = Gradientes.elementos['café-claro'];
-    // g.acciones.scale({size:5,origin:()=>{ return g.center }},1000)
+    Acciones.mostrar.sección(elemento)
   };
 
   for (let nombre in VistasInit) { Elementos[nombre.toLocaleLowerCase()] = VistasInit[nombre].elementos; }

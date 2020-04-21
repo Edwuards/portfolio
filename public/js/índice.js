@@ -1,7 +1,7 @@
 (function ($$1) {
   'use strict';
 
-  $$1 = $$1 && $$1.hasOwnProperty('default') ? $$1['default'] : $$1;
+  $$1 = $$1 && Object.prototype.hasOwnProperty.call($$1, 'default') ? $$1['default'] : $$1;
 
   function Secciones(){
     const Acciones = {};
@@ -574,7 +574,7 @@
                 UPDATE(axis,'min',pt);
                 UPDATE(axis,'max',pt);
               }
-              else{
+              else {
                 if(pt[axis] == LIMITS[axis].min.value){
                   ADD(axis,'min',pt);
                 }
@@ -805,7 +805,7 @@
         data.x -= origin.x;
         data.step = ((data.x * size) - data.x) / this.duration;
       }
-      else{
+      else {
         data.x = data.pt.x - origin.x;
       }
       data.size = (data.x + data.step)/data.x;
@@ -835,7 +835,7 @@
       if(this.progress === this.duration){
         if(typeof data.from == 'string'){
           if(data.from == 'right'){ data.from = true; }
-          else{ data.from = false; }
+          else { data.from = false; }
         }
       }
       let current = this.graphic.get.width();
@@ -846,7 +846,7 @@
       if(this.progress === this.duration){
         if(typeof data.from == 'string'){
           if(data.from == 'bottom'){ data.from = true; }
-          else{ data.from = false; }
+          else { data.from = false; }
         }
       }
       let current = this.graphic.get.height();
@@ -884,11 +884,11 @@
       let execute = (resolve)=>{
         setInterval(() => {
           if(progress) { ACTION.apply( { graphic: GRAPHIC, duration, progress },[args]); progress--; }
-          else{ resolve(GRAPHIC); }
+          else { resolve(GRAPHIC); }
         },10);
       };
 
-      return new Promise(function (resolve, reject){ execute(resolve,reject); });
+      return new Promise(function (resolve, reject){ execute(resolve); });
 
     };
 
@@ -916,7 +916,7 @@
     };
     for(let key in CANVAS){
       if(typeof CANVAS[key] !== 'function'){ CONTEXT.properties[key] = CANVAS[key]; }
-      else{ CONTEXT.functions[key] = {state: false, args: [] }; }
+      else { CONTEXT.functions[key] = {state: false, args: [] }; }
     }
 
     CONTEXT.functions.fill.state = true;
@@ -956,7 +956,7 @@
                 set: (value)=>{ CONTEXT.properties[key] = value; }
               });
             }
-            else{
+            else {
               Object.defineProperty(obj,key,{
                 enumerable: true,
                 writable: false,
@@ -1475,7 +1475,7 @@
             if(LOOPS.get(layer.index) !== undefined){ LOOPS.update(layer.index, Loop(layer) ); }
 
           }
-          else{
+          else {
             console.log(LOOPS.get());
             LOOPS.get().forEach((loop,i)=>{ if(!loop){ LOOPS.update(i,Loop(LAYERS.get(i))); }  });
           }
@@ -1499,7 +1499,7 @@
             clearInterval(active);
             if(active){ LOOPS.update(layer.index, false ); }
           }
-          else{
+          else {
             LOOPS.get().forEach((loop,i)=>{ if(loop){ clearInterval(loop); LOOPS.update(i,false); }  });
           }
 
@@ -1622,6 +1622,7 @@
     const Elementos = {};
     const Gradientes = {};
     const Contenedor =  $('#gradients');
+    const Acciones = {};
     const Estado = {
       activo: ''
     };
@@ -1630,7 +1631,7 @@
     const doodle = new Doodle({container:Contenedor[0]});
     const CANVAS = doodle.layers.get(0);
 
-    function DimensionesDePantalla(){
+    function dimensionesDePantalla(){
       let w = window.innerWidth;
       let h = window.innerHeight;
       let size = '';
@@ -1646,34 +1647,35 @@
     function iniciar(){
       for (let name in Gradientes) {
         let g = Gradientes[name];
-        let pantalla = DimensionesDePantalla();
+        let pantalla = dimensionesDePantalla();
         let radials = { radials:g.tamaños()[pantalla.size].radials };
         Elementos[name] = doodle.graphics.create.radialgradient.call(null,radials);
         g.colorStops.forEach((c)=>{ Elementos[name].colorStops.add.apply(null,c);});
       }
     }
 
+
     Gradientes['rojo-morado'] = {
       tamaños:()=>{
         let x = window.innerWidth, y = window.innerHeight;
-        let pantalla = DimensionesDePantalla();
+        let pantalla = dimensionesDePantalla();
 
         return {
           sm:{
             radials: [ { x,y,r:x }, {x,y,r:10} ],
-            scale: { active: 2, inactive:.5 }
+            scale: { activar: 2, desactivar:.5 }
           },
           md:{
             radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
-            scale: { active: 2, inactive:.5 }
+            scale: { activar: 2, desactivar:.5 }
           },
           lg:{
             radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
-            scale: { active: 2, inactive:.5 }
+            scale: { activar: 2, desactivar:.5 }
           },
           xl:{
             radials: [ { x,y,r:pantalla.w }, {x:pantalla.w,y:y ,r:pantalla.w/20} ],
-            scale: { active: 2, inactive:.5 }
+            scale: { activar: 2, desactivar:.5 }
           }
         }
 
@@ -1684,51 +1686,73 @@
     Gradientes['café-claro'] = {
       tamaños: ()=>{
         let x = 0, y = 0;
-        let pantalla = DimensionesDePantalla();
+        let pantalla = dimensionesDePantalla();
         return {
           sm:{
             radials: [ { x,y,r: pantalla.w/2 }, {x,y,r: pantalla.w/3} ],
-            scale: { active: 5, inactive:.125 }
+            scale: { activar: 5, desactivar:.125 }
           },
           md:{
             radials: [ { x,y,r:pantalla.w/3 }, {x,y,r:100} ],
-            scale: { active: 5, inactive:.5 }
+            scale: { activar: 5, desactivar:.5 }
           },
           lg:{
             radials: [ { x,y,r:pantalla.w/4 }, {x,y,r:100} ],
-            scale: { active: 5, inactive:.5 }
+            scale: { activar: 5, desactivar:.5 }
           },
           xl:{
             radials: [ { x,y,r:pantalla.w/4 }, {x,y,r:100} ],
-            scale: { active: 5, inactive:.5 }
+            scale: { activar: 5, desactivar:.5 }
           }
         }
 
       },
       colorStops: [[0,'#f5deb3b3'],[1,'#ffdc5f94']]
     };
-    //
-    // Gradientes['dark-green'] = {
-    //   tamaños:{
-    //     sm:{
-    //       radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
-    //       scale: { active: 2, inactive:.5 }
-    //     },
-    //     md:{
-    //       radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
-    //       scale: { active: 2, inactive:.5 }
-    //     },
-    //     lg:{
-    //       radials: [ { x:x+200, y:y+200,r:1000 }, {x,y,r:100} ],
-    //       scale: { active: 2, inactive:.5 }
-    //     }
-    //   },
-    //   colorStops: [[0,'#14442600'],[.9,'#144426ed']]
-    // }
+
+    Acciones.resize = ()=>{
+
+      let pantalla = dimensionesDePantalla();
+      CANVAS.context.canvas.width = pantalla.w; CANVAS.context.canvas.h = pantalla.h;
+
+      for (let name  in Elementos) {
+          let gradient = Elementos[name];
+          let { radials, scale } = Gradientes[name].tamaños()[pantalla.size];
+          gradient.radials.forEach((r,i)=>{
+            let center = r.center;
+            let radial = radials[i];
+            let x = (radial.x - center.x);
+            let y = (radial.y - center.y);
+            r.radius = radial.r;
+            r.translate({x,y,origin:center});
+            center = r.center;
+            if(Estado.activo == name){ r.scale({size: scale.activar, origin: center });}
+          });
+          gradient.space.points.limits.get.x.max.points.forEach((pt)=>{ pt.x = pantalla.w; });
+      }
+
+    };
+    Acciones.activar = (gradiente)=>{
+      if(Gradientes[gradiente]){
+        let pantalla = dimensionesDePantalla();
+        let {scale, radials} = Gradientes[gradiente].tamaños()[pantalla.size];
+        Estado.activo = gradiente;
+        gradiente = Elementos[gradiente];
+        return gradiente.actions.scale({
+          size: scale.activar ,
+          origin: ()=>{ return gradiente.center; }
+        },1000);
+      }
+    };
 
     iniciar();
 
-    return { elementos: Elementos, estado: Estado, contenedor: Contenedor };
+    return {
+      elementos: Elementos,
+      estado: Estado,
+      contenedor: Contenedor,
+      acciones: Acciones
+     };
 
   }
 
@@ -1739,7 +1763,26 @@
     const Elementos = {};
     const Gradientes = GradientesInit();
 
-    Acciones.show = {};
+    Acciones.transición = (gradiente)=>{
+      if(gradiente != Gradientes.estado.activo){
+        let activo = Gradientes.estado.activo;
+        if(activo == ''){ Gradientes.acciones.activar(gradiente); }
+        else {
+          Gradientes.acciones.desactivar(activo).then(()=>{
+            Gradientes.acciones.activar(gradiente);
+          });
+        }
+      }
+
+    };
+    Acciones.mostrar = {};
+    Acciones.mostrar.sección = (elemento)=>{
+      let secciones = {
+        'sobreMí':'café-claro'
+      };
+      Acciones.transición(secciones[elemento.attr('href')]);
+
+    };
     Acciones.marcarElemento = function(){
       let elemento = $(this);
       Secciones.acciones.marcar(elemento);
@@ -1749,13 +1792,13 @@
         Secciones.acciones.desmarcar(elemento);
       });
     };
-    Acciones.activarSección = function(e){
+    Acciones.activar = {};
+    Acciones.activar.sección = function(e){
       e.preventDefault();
       let elemento = $(this);
+      console.log(Gradientes);
       Secciones.acciones.activar(elemento);
-      // Gradientes.estado.activo = 'café-claro';
-      // let g = Gradientes.elementos['café-claro'];
-      // g.acciones.scale({size:5,origin:()=>{ return g.center }},1000)
+      Acciones.mostrar.sección(elemento);
     };
 
     for (let nombre in VistasInit) { Elementos[nombre.toLocaleLowerCase()] = VistasInit[nombre].elementos; }
@@ -1767,7 +1810,7 @@
   function Eventos(){
     const {Acciones,Elementos} = Init();
     Elementos.secciones.a.on('mouseenter',Acciones.marcarElemento);
-    Elementos.secciones.a.on('click',Acciones.activarSección);
+    Elementos.secciones.a.on('click',Acciones.activar.sección);
   }
 
   $$1(document).ready(Eventos);
