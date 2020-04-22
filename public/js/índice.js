@@ -1733,13 +1733,19 @@
 
     };
     Acciones.activar = (gradiente)=>{
+      return Acciones.activarPalanca(gradiente,true);
+    };
+    Acciones.desactivar = (gradiente)=>{
+      return Acciones.activarPalanca(gradiente,false);
+    };
+    Acciones.activarPalanca = (gradiente,estado)=>{
       if(Gradientes[gradiente]){
         let pantalla = dimensionesDePantalla();
         let {scale, radials} = Gradientes[gradiente].tamaños()[pantalla.size];
         Estado.activo = gradiente;
         gradiente = Elementos[gradiente];
         return gradiente.actions.scale({
-          size: scale.activar ,
+          size: estado ? scale.activar : scale.desactivar ,
           origin: ()=>{ return gradiente.center; }
         },1000);
       }
@@ -1778,7 +1784,8 @@
     Acciones.mostrar = {};
     Acciones.mostrar.sección = (elemento)=>{
       let secciones = {
-        'sobreMí':'café-claro'
+        'sobreMí':'café-claro',
+        'proyectos':'rojo-morado'
       };
       Acciones.transición(secciones[elemento.attr('href')]);
 
@@ -1796,7 +1803,6 @@
     Acciones.activar.sección = function(e){
       e.preventDefault();
       let elemento = $(this);
-      console.log(Gradientes);
       Secciones.acciones.activar(elemento);
       Acciones.mostrar.sección(elemento);
     };

@@ -23,7 +23,8 @@ export default function(){
   Acciones.mostrar = {};
   Acciones.mostrar.sección = (elemento)=>{
     let secciones = {
-      'sobreMí':'café-claro'
+      'sobreMí':'café-claro',
+      'proyectos':'rojo-morado'
     };
     Acciones.transición(secciones[elemento.attr('href')]);
 

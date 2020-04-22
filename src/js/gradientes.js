@@ -115,13 +115,19 @@ export default function(){
 
   };
   Acciones.activar = (gradiente)=>{
+    return Acciones.activarPalanca(gradiente,true);
+  }
+  Acciones.desactivar = (gradiente)=>{
+    return Acciones.activarPalanca(gradiente,false);
+  }
+  Acciones.activarPalanca = (gradiente,estado)=>{
     if(Gradientes[gradiente]){
       let pantalla = dimensionesDePantalla();
       let {scale, radials} = Gradientes[gradiente].tamaños()[pantalla.size];
       Estado.activo = gradiente;
       gradiente = Elementos[gradiente];
       return gradiente.actions.scale({
-        size: scale.activar ,
+        size: estado ? scale.activar : scale.desactivar ,
         origin: ()=>{ return gradiente.center; }
       },1000);
     }
