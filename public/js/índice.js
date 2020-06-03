@@ -1747,7 +1747,7 @@
         return gradiente.actions.scale({
           size: estado ? scale.activar : scale.desactivar ,
           origin: ()=>{ return gradiente.center; }
-        },1000);
+        },1000); 
       }
     };
 
@@ -1787,6 +1787,8 @@
         'sobreMí':'café-claro',
         'proyectos':'rojo-morado'
       };
+      let r = Gradientes.elementos[secciones[elemento.attr('href')]].radials[0].radius;
+      console.log(r);
       Acciones.transición(secciones[elemento.attr('href')]);
 
     };

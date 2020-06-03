@@ -121,6 +121,7 @@ export default function(){
     return Acciones.activarPalanca(gradiente,false);
   }
   Acciones.activarPalanca = (gradiente,estado)=>{
+    let nombre = gradiente;
     if(Gradientes[gradiente]){
       let pantalla = dimensionesDePantalla();
       let {scale, radials} = Gradientes[gradiente].tamaños()[pantalla.size];
@@ -129,7 +130,7 @@ export default function(){
       return gradiente.actions.scale({
         size: estado ? scale.activar : scale.desactivar ,
         origin: ()=>{ return gradiente.center; }
-      },1000);
+      },1000); 
     }
   }
 

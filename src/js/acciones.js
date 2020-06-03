@@ -26,6 +26,8 @@ export default function(){
       'sobreMí':'café-claro',
       'proyectos':'rojo-morado'
     };
+    let r = Gradientes.elementos[secciones[elemento.attr('href')]].radials[0].radius;
+    console.log(r);
     Acciones.transición(secciones[elemento.attr('href')]);
 
   }
